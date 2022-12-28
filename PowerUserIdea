@@ -1,0 +1,153 @@
+/****  POWER_USER ROLE ****/
+// Why this custom role?
+// 1)   This is for creators in Tableau who are more data saavy and know a little
+//      bit of SQL. The idea here is that giving them access to Snowflake will give
+//      them ability to quality check their Tableau dashboards w/ Snowflake, and will 
+//      facilitate innovation that might otherwise not be realized if these business
+//      users had the standard limited access.
+
+// Kinds of privileges this role should have:
+//  1) Global - No privileges
+//  2) Databases - Read access to presentation layer
+//                 Write access to their own db / schema
+//  3) Schemas - Read access to public schema in presentation layer
+//                 Write access to their own db / schema
+//  4) Tables - Read access to those in presentation layer public schema
+//                 Write access to their own db / schema
+//  5) Views - Read access to those in presentation layer public schema
+//                 Write access to their own db / schema
+//  6) Stages - No privileges
+//  7) Pipes - No privileges
+//  8) Streams  - No privileges
+//  9) Tasks - No privileges
+// 10) Functions - Usage privilege on those in UTIL_DB
+// 11) Procedures - No privileges
+// 12) Users - No privileges
+// 13) Roles - No privileges
+// 14) Resource Monitor - No privileges
+// 15) Virtual Warehouse - No privileges
+// 16) Connection - No privileges
+// 17) Failover Group - No privileges
+// 18) Replication Group - No privileges
+// 19) Integration - No privileges
+// 20) Network Policy - No privileges
+// 21) Session Policy - No privileges
+// 22) Data Exchange - No Privileges
+// 23) Data Exchange Listing - No privileges
+// 24) External Tables - No privileges
+// 25) File Formats - No privileges
+// 26) Masking Policies - No privileges
+// 27) Row Access Policies - No privileges
+// 28) Tag Privileges - No privileges
+// 29) Sequence Privileges - No privileges
+
+SHOW GRANTS TO ROLE POWER_USER;
+USE ROLE SECURITYADMIN; // Security admin creates the role (has MANAGE GRANTS privilege)
+CREATE ROLE POWER_USER
+    COMMENT = 'Role for business users who need expanded access';
+
+/****************************************************************************************
+*   -- GLOBAL PRIVILEGES --
+*   Paradigm:   No global privileges
+****************************************************************************************/
+// No privileges at global level
+
+/****************************************************************************************
+*   -- DATABASE PRIVILEGES --
+*      Paradigm: Provide usage access to presentation layer and databases with 
+*                sample data.
+****************************************************************************************/
+USE ROLE SECURITYADMIN;
+GRANT USAGE ON DATABASE PRESENTATION_DB TO ROLE POWER_USER;
+GRANT USAGE ON DATABASE ERP_REPORTING_PROD TO ROLE POWER_USER;
+GRANT USAGE ON DATABASE ERP_REPORTING_UAT TO ROLE POWER_USER;
+//GRANT USAGE ON DATABASE SANDBOX TO ROLE POWER_USER;
+GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE_SAMPLE_DATA TO POWER_USER;
+
+/****************************************************************************************
+*   -- GRANTS FOR SCHEMAS --
+*      Paradigm: Give same access to Schemas as databases, but give expanded access
+*                in schema SANDBOX.POWER_USERS as an area the power users can create
+*                their own views.
+***************************************************************************************/
+USE ROLE SECURITYADMIN;
+GRANT USAGE ON SCHEMA PRESENTATION_DB.PUBLIC TO ROLE POWER_USER;
+//GRANT USAGE ON SCHEMA SANDBOX.PUBLIC TO ROLE POWER_USER;
+//GRANT USAGE ON SCHEMA SANDBOX.SAMPLE_DATA TO ROLE POWER_USER;
+//GRANT MONITOR, USAGE, CREATE TABLE,
+//     CREATE VIEW, CREATE FUNCTION ON SCHEMA SANDBOX.POWER_USERS TO ROLE POWER_USER;
+
+/****************************************************************************************
+*    -- GRANTS FOR TABLES & VIEWS --
+*       Paradigm:   Access to the current and future objects within 
+*                   each database will follow the role's access to the
+*                   database itself. 
+*       Note:       For future grants, have to explicitly grant access to
+*                   each schema, which would take a while to write and 
+*                   maintain. As such, the future grants script below 
+*                   produces the script that has to be executed for this.
+****************************************************************************************/
+// ----------------------------------------
+// 1) TABLES
+// ----------------------------------------
+USE ROLE SECURITYADMIN;
+GRANT SELECT, REFERENCES ON ALL TABLES IN SCHEMA PRESENTATION_DB.PUBLIC TO ROLE  POWER_USER;
+//GRANT SELECT, REFERENCES ON ALL TABLES IN SCHEMA SANDBOX.PUBLIC TO ROLE POWER_USER;
+//GRANT SELECT, REFERENCES ON ALL TABLES IN SCHEMA SANDBOX.SAMPLE_DATA TO ROLE POWER_USER;
+//GRANT SELECT, INSERT, 
+//      UPDATE, TRUNCATE, 
+//      DELETE, REFERENCES ON ALL TABLES IN SCHEMA SANDBOX.POWER_USERS TO ROLE POWER_USER;
+GRANT SELECT, REFERENCES ON FUTURE TABLES IN SCHEMA PRESENTATION_DB.PUBLIC TO ROLE  POWER_USER;
+//GRANT SELECT, REFERENCES ON FUTURE TABLES IN SCHEMA SANDBOX.PUBLIC TO ROLE POWER_USER;
+//GRANT SELECT, REFERENCES ON FUTURE TABLES IN SCHEMA SANDBOX.SAMPLE_DATA TO ROLE POWER_USER;
+//GRANT SELECT, INSERT, 
+//      UPDATE, TRUNCATE, 
+ //     DELETE, REFERENCES ON FUTURE TABLES IN SCHEMA SANDBOX.POWER_USERS TO ROLE POWER_USER;
+
+// ----------------------------------------
+// 2) VIEWS
+// ----------------------------------------
+GRANT SELECT, REFERENCES ON ALL VIEWS IN SCHEMA PRESENTATION_DB.PUBLIC TO ROLE  POWER_USER;
+//GRANT SELECT, REFERENCES ON ALL VIEWS IN SCHEMA SANDBOX.PUBLIC TO ROLE POWER_USER;
+//GRANT SELECT, REFERENCES ON ALL VIEWS IN SCHEMA SANDBOX.SAMPLE_DATA TO ROLE POWER_USER;
+//GRANT SELECT, INSERT, 
+//      UPDATE, TRUNCATE, 
+//      DELETE, REFERENCES ON ALL VIEWS IN SCHEMA SANDBOX.POWER_USERS TO ROLE POWER_USER;
+GRANT SELECT, REFERENCES ON FUTURE VIEWS IN SCHEMA PRESENTATION_DB.PUBLIC TO ROLE  POWER_USER;
+//GRANT SELECT, REFERENCES ON FUTURE VIEWS IN SCHEMA SANDBOX.PUBLIC TO ROLE POWER_USER;
+//GRANT SELECT, REFERENCES ON FUTURE VIEWS IN SCHEMA SANDBOX.SAMPLE_DATA TO ROLE POWER_USER;
+//GRANT SELECT, INSERT, 
+//      UPDATE, TRUNCATE, 
+//      DELETE, REFERENCES ON FUTURE VIEWS IN SCHEMA SANDBOX.POWER_USERS TO ROLE POWER_USER;
+
+/****************************************************************************************
+*    -- FUNCTION PRIVILEGES --
+*       Paradigm:   DATA_ENGINEER role needs full access to all functions
+****************************************************************************************/
+GRANT USAGE ON ALL FUNCTIONS IN SCHEMA UTIL_DB.PUBLIC TO ROLE POWER_USER;
+
+/****************************************************************************************
+*    -- VIRTUAL WAREHOUSE PRIVILEGES --
+*       Paradigm:   Grant only IT_XSMALL and IT_SMALL warehouses for POWER_USER to use
+****************************************************************************************/
+GRANT ALL ON WAREHOUSE IT_XSMALL TO ROLE POWER_USER;
+GRANT ALL ON WAREHOUSE IT_SMALL TO ROLE POWER_USER;
+
+
+// Grant this role to BI team users:
+GRANT ROLE DATA_ENGINEER TO USER KBAILEY;
+// Grant role to other BI team members & mgr after testing
+// and approval of script w/ John Weaver
+GRANT ROLE DATA_ENGINEER TO USER JVINCENT;
+GRANT ROLE DATA_ENGINEER TO USER "MOHLRICH@BENCHMADE.COM";
+//GRANT ROLE DATA_ENGINEER TO USER CMARTEY; (??)
+
+// Role should be created using SysAdmin, but this 
+// explicitly gives ownership to SysAdmin role per 
+// Snowflake best practices recommendation.
+USE ROLE SECURITYADMIN;
+GRANT OWNERSHIP 
+    ON ROLE POWER_USER
+    TO SYSADMIN;
+
+GRANT ROLE POWER_USER TO ROLE SYSADMIN;

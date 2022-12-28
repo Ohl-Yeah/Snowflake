@@ -54,3 +54,67 @@ GRANT SELECT ON FUTURE TABLES IN SCHEMA PRESENTATION_DB.PUBLIC TO ROLE OPERATION
 // Grant priviledges to ALL VIEWS in SCHEMA
 GRANT SELECT, REFERENCES ON ALL VIEWS IN SCHEMA "APPLICATION_ENTITY_DB"."PUBLIC" TO ROLE TABLEAU_ADMIN;
 GRANT SELECT, REFERENCES ON ALL VIEWS IN SCHEMA "APPLICATION_ENTITY_DB"."JIRA" TO ROLE TABLEAU_ADMIN;
+
+// Creation of databases for TIDY-VERSE
+USER ROLE SYSADMIN; // Forece SYSADMIN to be owner.
+    CREATE DATABASE IF NOT EXISTS TIDY_DB
+        COMMENT = 'Tidy layer - for table-by-table cleansing';
+    CREATE DATABASE IF NOT EXISTS APPLICATION_ENTITY_DB
+        COMMENT = 'Application Entity layer - for logical joins';
+    CREATE DATABASE IF NOT EXISTS BUSINESSLOGIC_DB
+        COMMENT = 'Business Logic layer - for applying business logic';
+    CREATE DATABASE IF NOT EXISTS PRESENTATION_DB
+        COMMENT = 'Presentation layer - for consumption by Tableau and other applications';
+
+// APPLICATION_ENTITY_DB schemas - 1-1 match with ERP_STAGING_PROD
+// Note, create all with managed access to centralize grants to the schema owner
+USE ROLE SYSADMIN; // Force SYSADMIN to be owner
+    CREATE SCHEMA IF NOT EXISTS  APPLICATION_ENTITY_DB.BENCHMADE_DBO
+        WITH MANAGED ACCESS
+        COMMENT = 'For Benchmade_DBO entities';
+    CREATE SCHEMA IF NOT EXISTS  APPLICATION_ENTITY_DB.FLATFILES_DBO
+        WITH MANAGED ACCESS
+        COMMENT = 'For FlatFiles entities';       
+    CREATE SCHEMA IF NOT EXISTS  APPLICATION_ENTITY_DB.MES_LITE_DBO
+        WITH MANAGED ACCESS
+        COMMENT = 'For MES Lite entities';
+    CREATE SCHEMA IF NOT EXISTS PRESENTATION_DB.DMR
+        WITH MANAGED ACCESS
+        COMMENT = 'Data exposed to Tableau for DMR dashboard';
+    CREATE SCHEMA IF NOT EXISTS PRESENTATION_DB.ADMIN
+        WITH MANAGED ACCESS
+        COMMENT = 'Data for Tableau/Snowflake administration';
+
+-----------------------
+//Table Select for ROLES
+SELECT * FROM SNOWFLAKE.ACCOUNT_USAGE.GRANTS_TO_ROLES
+WHERE GRANTEE_NAME = 'SYSADMIN';
+
+// 1) SYSADMIN should not have the MANAGE GRANTS global privilege
+//      this should only be granted to SECURITYADMIN per Snowflake
+//      best practice recommendations
+REVOKE MANAGE GRANTS ON ACCOUNT
+    FROM ROLE SYSADMIN;
+    
+SHOW ROLES
+
+-------------------
+// Role should be created using SysAdmin, but this explicitly gives ownership to 
+// SysAdmin role per Snowflake best practices recommendation.
+USE ROLE SECURITYADMIN;
+GRANT OWNERSHIP 
+    ON ROLE TABLEAU_ADMIN
+    TO SYSADMIN;
+    
+GRANT ROLE TABLEAU_ADMIN TO ROLE SYSADMIN;
+
+
+-----------
+
+
+
+
+
+
+
+        

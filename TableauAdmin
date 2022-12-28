@@ -1,0 +1,262 @@
+show users;
+/****  TABLEAU_ADMIN ROLE ****/
+// Why this custom role?
+//      For Tableau Admins, want to give them elevated access to Snowflake objects that 
+//      will help with the administration tasks in Tableau, such as monitoring costs, 
+//      viewing the BKC data catalog including the security data, and monitoring usage
+//      stats in Tableau and how Tableau is using our Snowflake environment.
+//      The main object that this role needs elevated access to is the SNOWFLAKE 
+//      database, which contains all of the usage stats, metadata, and security data
+//      needed for this role.
+
+// Kinds of privileges this role should have:
+//  1) Global - Only give access to monitor snowpipes and account usage
+//  2) Databases - MONITOR and USAGE granted for all databases
+//  3) Schemas - MONITOR and USAGE granted for all databases
+//  4) Tables - SELECT, REFERENCES privileges for nearly all databases
+//  5) Views - SELECT, REFERENCES privileges for nearly all databases
+//  6) Stages - No privileges
+//  7) Pipes - Monitor access to pipes
+//  8) Streams  - SELECT privilege on streams for nearly all databases
+//  9) Tasks - MONITOR privilege for nearly all databases
+// 10) Functions - No privileges
+// 11) Procedures - No privileges
+// 12) Users - MONITOR privilege for any Tableau application users
+// 13) Roles - No privileges
+// 14) Resource Monitor - No privileges
+// 15) Virtual Warehouse - Grant usage on IT warehouses only.
+// 16) Connection - No privileges
+// 17) Failover Group - No privileges
+// 18) Replication Group - No privileges
+// 19) Integration - No privileges
+// 20) Network Policy - No privileges
+// 21) Session Policy - No privileges
+// 22) Data Exchange - No privileges
+// 23) Data Exchange Listing - No privileges
+// 24) External Tables - No privileges
+// 25) File Formats - No privileges
+// 26) Masking Policies - No privileges
+// 27) Row Access Policies - No privileges
+// 28) Tag Privileges - No privileges
+// 29) Sequence Privileges - No privileges
+
+USE ROLE SECURITYADMIN; // Security admin creates the role (has MANAGE GRANTS privilege)
+CREATE ROLE TABLEAU_ADMIN
+    COMMENT = 'Role for exposing SNOWFLAKE database to Tableau for use by admins';
+    
+/****************************************************************************************
+*   -- GLOBAL PRIVILEGES --
+*   Paradigm:   Tableau admins may need to monitor usage information in Snowflake
+*               and monitor future Snowpipe creation as they could affect timing
+*               issues in data exposed to Tableau.
+*               No create / write access is granted to this role @ account level.
+****************************************************************************************/
+USE ROLE ACCOUNTADMIN; // Need to use ACCOUNTADMIN role to set account-level privileges
+GRANT   MONITOR EXECUTION, // For monitoring Snowpipes
+        MONITOR USAGE // Give role ability to monitor account-level usage & historical information
+    ON ACCOUNT
+    TO ROLE TABLEAU_ADMIN;
+
+/****************************************************************************************
+*   -- DATABASE PRIVILEGES --
+*      Paradigm:    For monitoring usage and data flow, will grant the monitor and usage
+*                   priviles for select databases to this role.
+****************************************************************************************/
+USE ROLE SECURITYADMIN;
+GRANT MONITOR, USAGE ON DATABASE UTIL_DB TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON DATABASE ERP_REPORTING_PROD TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON DATABASE ERP_STAGING_PROD TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON DATABASE FLAT_FILES_PROD TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON DATABASE SANDBOX TO ROLE TABLEAU_ADMIN;
+GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE_SAMPLE_DATA TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON DATABASE TABLEAU_STAGING TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON DATABASE TIDY_DB TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON DATABASE APPLICATION_ENTITY_DB TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON DATABASE BUSINESS_LOGIC_DB TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON DATABASE PRESENTATION_DB TO ROLE TABLEAU_ADMIN;
+
+/****************************************************************************************
+*    -- SCHEMA PRIVILEGES --
+*       Paradigm:   Grant the same kinds of security access to this role at the
+*                   schema level as what was granted at the database level.
+****************************************************************************************/
+USE ROLE SECURITYADMIN;
+GRANT MONITOR, USAGE ON ALL SCHEMAS IN DATABASE ERP_REPORTING_PROD TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON FUTURE SCHEMAS IN DATABASE ERP_REPORTING_PROD TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON ALL SCHEMAS IN DATABASE ERP_STAGING_PROD TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON FUTURE SCHEMAS IN DATABASE ERP_STAGING_PROD TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON ALL SCHEMAS IN DATABASE FLAT_FILES_PROD TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON FUTURE SCHEMAS IN DATABASE FLAT_FILES_PROD TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON ALL SCHEMAS IN DATABASE SANDBOX TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON FUTURE SCHEMAS IN DATABASE SANDBOX TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON ALL SCHEMAS IN DATABASE TABLEAU_STAGING TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON FUTURE SCHEMAS IN DATABASE TABLEAU_STAGING TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON ALL SCHEMAS IN DATABASE TIDY_DB TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON FUTURE SCHEMAS IN DATABASE TIDY_DB TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON ALL SCHEMAS IN DATABASE APPLICATION_ENTITY_DB TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON FUTURE SCHEMAS IN DATABASE APPLICATION_ENTITY_DB TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON ALL SCHEMAS IN DATABASE BUSINESS_LOGIC_DB TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON FUTURE SCHEMAS IN DATABASE BUSINESS_LOGIC_DB TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON ALL SCHEMAS IN DATABASE PRESENTATION_DB TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON FUTURE SCHEMAS IN DATABASE PRESENTATION_DB TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON ALL SCHEMAS IN DATABASE UTIL_DB TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR, USAGE ON FUTURE SCHEMAS IN DATABASE UTIL_DB TO ROLE TABLEAU_ADMIN;
+
+/****************************************************************************************
+*    -- TABLE & VIEW PRIVILEGES --
+*       Paradigm:   Access to the current and future objects within 
+*                   each database will follow the role's access to the
+*                   database itself. 
+****************************************************************************************/
+USE ROLE SECURITYADMIN;
+// ----------------------------------------
+// 1) TABLES
+// ----------------------------------------
+GRANT SELECT, REFERENCES ON ALL TABLES IN DATABASE ERP_REPORTING_PROD TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON FUTURE TABLES IN DATABASE ERP_REPORTING_PROD TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON ALL TABLES IN DATABASE ERP_STAGING_PROD TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON FUTURE TABLES IN DATABASE ERP_STAGING_PROD TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON ALL TABLES IN DATABASE FLAT_FILES_PROD TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON FUTURE TABLES IN DATABASE FLAT_FILES_PROD TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON ALL TABLES IN DATABASE SANDBOX TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON FUTURE TABLES IN DATABASE SANDBOX TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON ALL TABLES IN DATABASE TABLEAU_STAGING TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON FUTURE TABLES IN DATABASE TABLEAU_STAGING TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON ALL TABLES IN DATABASE TIDY_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON FUTURE TABLES IN DATABASE TIDY_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON ALL TABLES IN DATABASE APPLICATION_ENTITY_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON FUTURE TABLES IN DATABASE APPLICATION_ENTITY_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON ALL TABLES IN DATABASE BUSINESS_LOGIC_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON FUTURE TABLES IN DATABASE BUSINESS_LOGIC_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON ALL TABLES IN DATABASE PRESENTATION_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON FUTURE TABLES IN DATABASE PRESENTATION_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON ALL TABLES IN DATABASE UTIL_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON FUTURE TABLES IN DATABASE UTIL_DB TO ROLE TABLEAU_ADMIN;
+// ----------------------------------------
+// 2) SCHEMA-LEVEL TABLE GRANTS - must run results of this query
+// ----------------------------------------
+SELECT  'GRANT SELECT, REFERENCES ON FUTURE TABLES IN SCHEMA ' || 
+        CONCAT( '"', CATALOG_NAME, '"', '.', '"', SCHEMA_NAME, '"' ) ||
+        ' TO ROLE TABLEAU_ADMIN;' AS "Command"
+FROM    SNOWFLAKE.ACCOUNT_USAGE.SCHEMATA
+WHERE   CATALOG_NAME IN( 'UTIL_DB', 'ERP_REPORTING_PROD',
+                         'ERP_STAGING_PROD', 'FLAT_FILES_PROD', 'SANDBOX', 'TABLEAU_STAGING',
+                         'TIDY_DB', 'APPLICATION_ENTITY_DB', 'BUSINESS_LOGIC_DB',
+                         'PRESENTATION_DB'
+                       )
+    AND SCHEMA_NAME NOT LIKE 'FIVETRAN%'
+    AND DELETED IS NULL;
+
+// ----------------------------------------
+// 2) VIEWS
+// ----------------------------------------
+GRANT SELECT, REFERENCES ON ALL VIEWS IN DATABASE ERP_REPORTING_PROD TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON FUTURE VIEWS IN DATABASE ERP_REPORTING_PROD TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON ALL VIEWS IN DATABASE ERP_STAGING_PROD TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON FUTURE VIEWS IN DATABASE ERP_STAGING_PROD TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON ALL VIEWS IN DATABASE FLAT_FILES_PROD TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON FUTURE VIEWS IN DATABASE FLAT_FILES_PROD TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON ALL VIEWS IN DATABASE SANDBOX TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON FUTURE VIEWS IN DATABASE SANDBOX TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON ALL VIEWS IN DATABASE TABLEAU_STAGING TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON FUTURE VIEWS IN DATABASE TABLEAU_STAGING TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON ALL VIEWS IN DATABASE TIDY_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON FUTURE VIEWS IN DATABASE TIDY_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON ALL VIEWS IN DATABASE APPLICATION_ENTITY_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON FUTURE VIEWS IN DATABASE APPLICATION_ENTITY_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON ALL VIEWS IN DATABASE BUSINESS_LOGIC_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON FUTURE VIEWS IN DATABASE BUSINESS_LOGIC_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON ALL VIEWS IN DATABASE PRESENTATION_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON FUTURE VIEWS IN DATABASE PRESENTATION_DB TO ROLE TABLEAU_ADMIN;
+
+
+GRANT SELECT, REFERENCES ON ALL MATERIALIZED VIEWS IN DATABASE TIDY_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON ALL MATERIALIZED VIEWS IN DATABASE APPLICATION_ENTITY_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON FUTURE MATERIALIZED VIEWS IN DATABASE TIDY_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT, REFERENCES ON FUTURE MATERIALIZED VIEWS IN DATABASE APPLICATION_ENTITY_DB TO ROLE TABLEAU_ADMIN;
+
+/****************************************************************************************
+*    -- PIPE PRIVILEGES --
+*       Snowpipes are a continuous data ingestion service. We can use them to move
+*       data around within Snowflake itself.
+*       Paradigm:   Once we start using Snowpipes, the Tableau Admin role may need to 
+*                   monitor pipe timing vs. Tableau refreshing, etc...
+*                   Plan is to only use UTIL_DB for pipes, so only need to grant
+*                   privilege on that database.
+****************************************************************************************/
+GRANT MONITOR ON FUTURE PIPES IN DATABASE UTIL_DB TO ROLE TABLEAU_ADMIN;
+
+/****************************************************************************************
+*    -- STREAM PRIVILEGES --
+*       Snowflake table streams are a way to keep track of table changes. 
+*       Paradigm:   Want to give this role SELECT access to streams stored under 
+*                   databases and schemas that it already has access to.
+****************************************************************************************/
+GRANT SELECT ON ALL STREAMS IN DATABASE ERP_REPORTING_PROD TO ROLE TABLEAU_ADMIN;
+GRANT SELECT ON FUTURE STREAMS IN DATABASE ERP_REPORTING_PROD TO ROLE TABLEAU_ADMIN;
+GRANT SELECT ON ALL STREAMS IN DATABASE ERP_STAGING_PROD TO ROLE TABLEAU_ADMIN;
+GRANT SELECT ON FUTURE STREAMS IN DATABASE ERP_STAGING_PROD TO ROLE TABLEAU_ADMIN;
+GRANT SELECT ON ALL STREAMS IN DATABASE FLAT_FILES_PROD TO ROLE TABLEAU_ADMIN;
+GRANT SELECT ON FUTURE STREAMS IN DATABASE FLAT_FILES_PROD TO ROLE TABLEAU_ADMIN;
+GRANT SELECT ON ALL STREAMS IN DATABASE SANDBOX TO ROLE TABLEAU_ADMIN;
+GRANT SELECT ON FUTURE STREAMS IN DATABASE SANDBOX TO ROLE TABLEAU_ADMIN;
+GRANT SELECT ON ALL STREAMS IN DATABASE TABLEAU_STAGING TO ROLE TABLEAU_ADMIN;
+GRANT SELECT ON FUTURE STREAMS IN DATABASE TABLEAU_STAGING TO ROLE TABLEAU_ADMIN;
+GRANT SELECT ON ALL STREAMS IN DATABASE TIDY_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT ON FUTURE STREAMS IN DATABASE TIDY_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT ON ALL STREAMS IN DATABASE APPLICATION_ENTITY_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT ON FUTURE STREAMS IN DATABASE APPLICATION_ENTITY_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT ON ALL STREAMS IN DATABASE BUSINESS_LOGIC_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT ON FUTURE STREAMS IN DATABASE BUSINESS_LOGIC_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT ON ALL STREAMS IN DATABASE PRESENTATION_DB TO ROLE TABLEAU_ADMIN;
+GRANT SELECT ON FUTURE STREAMS IN DATABASE PRESENTATION_DB TO ROLE TABLEAU_ADMIN;
+
+/****************************************************************************************
+*    -- TASK PRIVILEGES --
+*       Snowflake tasks are a way to schedule snowpipes to execute 
+*       Paradigm:   Want to give this role MONITOR privilege for monitor any timing 
+*                   issues with data refreshing on the Tableau side.
+*                   Will put all tasks in UTIL_DB, so only need to grant privilege
+*                   on that one database
+****************************************************************************************/
+GRANT MONITOR ON ALL TASKS IN DATABASE UTIL_DB TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR ON FUTURE TASKS IN DATABASE UTIL_DB TO ROLE TABLEAU_ADMIN;
+
+/****************************************************************************************
+*    -- USER PRIVILEGES --
+*       Paradigm:   Certain Snowflake users are used by Tableau to access Snowflake data
+*                   Want to give this role access to monitor those users which are
+*                   used for this purpose.
+****************************************************************************************/
+GRANT MONITOR ON USER APAYABLE TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR ON USER FIN_CON TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR ON USER FIN_TAB TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR ON USER OPS_WIP TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR ON USER SAL_MKT TO ROLE TABLEAU_ADMIN;
+GRANT MONITOR ON USER TBL_SVC TO ROLE TABLEAU_ADMIN;
+
+/****************************************************************************************
+*    -- VIRTUAL WAREHOUSE PRIVILEGES --
+*       Paradigm:   Will use IT warehouses so that we can monitor cost of administrative
+*                   work in Snowflake.
+****************************************************************************************/
+GRANT USAGE ON WAREHOUSE FINANCE_STD TO ROLE TABLEAU_ADMIN;
+GRANT USAGE ON WAREHOUSE FINANCE_SMALL TO ROLE TABLEAU_ADMIN;
+GRANT USAGE ON WAREHOUSE FINANCE_MED TO ROLE TABLEAU_ADMIN;
+GRANT USAGE ON WAREHOUSE OPERATIONS_STD TO ROLE TABLEAU_ADMIN;
+GRANT USAGE ON WAREHOUSE OPERATIONS_SMALL TO ROLE TABLEAU_ADMIN;
+GRANT USAGE ON WAREHOUSE SALES_MARK_STD TO ROLE TABLEAU_ADMIN;
+GRANT USAGE ON WAREHOUSE SALES_MARK_SMALL TO ROLE TABLEAU_ADMIN;
+GRANT USAGE ON WAREHOUSE IT_XSMALL TO ROLE TABLEAU_ADMIN;
+GRANT USAGE ON WAREHOUSE IT_SMALL TO ROLE TABLEAU_ADMIN;
+GRANT USAGE ON WAREHOUSE IT_MED TO ROLE TABLEAU_ADMIN;
+
+// Role should be created using SysAdmin, but this 
+// explicitly gives ownership to SysAdmin role per 
+// Snowflake best practices recommendation.
+USE ROLE SECURITYADMIN;
+GRANT OWNERSHIP 
+    ON ROLE TABLEAU_ADMIN
+    TO SYSADMIN;
+    
+GRANT ROLE TABLEAU_ADMIN TO ROLE SYSADMIN;
